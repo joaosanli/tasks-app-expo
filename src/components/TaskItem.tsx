@@ -1,43 +1,111 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import { Feather, AntDesign } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { TaskItem as TaskType, useTaskStore } from '../store/useTaskStore';
 
-const TaskItem = ({ task }) => {
-  const today = new Date();
-  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+interface TaskItemProps {
+  task: TaskType;
+}
 
-  const isOverdue = dueDate && dueDate < today;
+const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
+  const deleteTask = useTaskStore((state) => state.deleteTask);
+  const toggleTaskCompleted = useTaskStore((state) => state.toggleTaskCompleted);
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0));
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.taskTitle}>{task.title}</Text>
-      {dueDate && (
-        <Text style={[styles.dueDate, isOverdue ? styles.overdue : styles.onTime]}>
-          {dueDate.toLocaleDateString()}
-        </Text>
-      )}
-    </View>
+    <Pressable style={styles.task} onPress={() => router.push(`/task/${task._id}`)}>
+      <View style={styles.contentContainer}>
+        <View style={styles.titleRow}>
+          <Text style={[styles.text, task.completed && styles.textCompleted]}>{task.text}</Text>
+          <Text style={styles.priority}>{task.priority}</Text>
+        </View>
+        {task.dueDate && (
+          <Text style={[styles.dateText, isOverdue ? styles.dateOverdue : styles.dateOnTime]}>
+            Até: {new Date(task.dueDate).toLocaleDateString()}
+          </Text>
+        )}
+      </View>
+      <View style={styles.icons}>
+        <TouchableOpacity
+          onPress={(event) => {
+            event.stopPropagation();
+            toggleTaskCompleted(task._id);
+          }}
+          accessibilityRole="button"
+        >
+          <Feather name={task.completed ? 'rotate-ccw' : 'check'} size={20} color="#fff" style={styles.icon} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={(event) => {
+            event.stopPropagation();
+            deleteTask(task._id);
+          }}
+          accessibilityRole="button"
+        >
+          <AntDesign name="delete" size={20} color="#fff" style={styles.icon} />
+        </TouchableOpacity>
+      </View>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  task: {
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  taskTitle: {
+  contentContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  text: {
+    color: '#fff',
     fontSize: 16,
+    flex: 1,
+  },
+  textCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#aaa',
+  },
+  priority: {
+    color: '#000',
+    backgroundColor: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  dateText: {
+    fontSize: 12,
+    marginTop: 4,
     fontWeight: 'bold',
   },
-  dueDate: {
-    fontSize: 14,
-    marginTop: 5,
-  },
-  overdue: {
+  dateOverdue: {
     color: '#e53935',
   },
-  onTime: {
+  dateOnTime: {
     color: '#43a047',
+  },
+  icons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  icon: {
+    padding: 2,
   },
 });
 
